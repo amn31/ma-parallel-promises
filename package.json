@@ -1,0 +1,26 @@
+{
+  "name": "@amn31/ma-parallel-promises",
+  "version": "1.0.0",
+  "description": "Run in parallel a number of promises regarding a big array of data",
+  "main": "dist/lib/ma-parallel-promises.js",
+  "types": "dist/lib/ma-parallel-promises.d.ts",
+  "scripts": {
+    "test": "ts-node test\\test-ma-parallel-promises.ts",
+    "build": "tsc"
+  },
+  "keywords": [
+    "parallel",
+    "thread",
+    "promise",
+    "array"
+  ],
+  "author": "Morillon Alain",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^16.11.10",
+    "typescript": "^4.5.2"
+  },
+  "dependencies": {
+    "axios": "^0.24.0"
+  }
+}
