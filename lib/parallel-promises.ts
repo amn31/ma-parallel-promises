@@ -1,102 +1,98 @@
 
-/*
-export interface IOperators {
-    [index: string]: symbol
-}
-
-type IOrAnd = "or" | "and" ;
-interface ISimpleCondition {
-    0: string | number;
-    1: string | number;
-    2: string | number;
-}
-
-export type ITabSimpleConditions = (ISimpleCondition |IOrAnd|CompleteConditions)[];
-export type CompleteConditions = (ISimpleCondition | IOrAnd | ITabSimpleConditions)
-
-export class Convert2Sequelize {
-    private fc: IOrAnd = "and";
-    
-
-    display(r: any) {
-       
-        return r;
-    }
-
-}
-*/
 
 /**
  * Lib permettant d'effectuer l'exécution en parallèle d'une promise pour un ensemble des données d'un tableau.
  * La progression des exécution en parallèle est controler et est limité à un nombre 
  */
 
+
+
+/**
+ * Maximun thread running in parallel
+ */
+export type NumberPromise = number | 3 ;
+
+/**
+ * Option to use for run() 
+ */
+export interface ParallelOptions {
+    /** Maximun thread running in parallel */
+    maxPromise: NumberPromise;
+    /** Number of milliseconds to wait before checking if the process is completed */
+    minWaitBeforeResult?:number;
+    /** The process will be stopped if a thread is rejected */
+    abortOnError?: boolean;
+    /** if a thread is rejected the promise of run() method will be rejected */
+    rejectOnError?: boolean;
+    
+}
+
+/**
+ * Option for run()
+ */
+export type RunOptions = (NumberPromise|ParallelOptions);
+
 /**
  * Permet de paralléliser l'exécution de données d'un tableau
  * 
  * Exemple 
-    import { ParallelPromises } from "../lib/ParallelPromises";
+ * 
+    
+import { ParallelPromises } from "@amn31/ma-parallel-promises";
 
-    // Les données 
-    let items:any[]=[];
-    for (var i = 0 ; i < 100; i++) {
-        items.push({user: 'user'+i,duration: Math.random()});
+
+// Les données sous la forme [{ user: '...', duration: 0.45 }] //
+let items: any[] = [];
+for (var i = 0; i < 100; i++) {
+    items.push({
+        user: 'user' + i,
+        duration: Math.random()
+    });
+}
+
+// Context global d'exécution //
+var GlobalContext = { nbItem: 0 };
+
+// Method unitaire de traitement des données //
+function ModelTodealItem(indice: number, _items: any[], context?: any): Promise<any> {
+    let data = _items[indice];
+    let duration = 10000 * data.duration;
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            console.log('ModelTodealItem', data, context);
+            context.nbItem++;
+            resolve(true)
+        }, duration)
+    });
+}
+
+// Préparation à l'exécution en parallèle //
+let p = new ParallelPromises(items, ModelTodealItem, GlobalContext);
+
+// Exécution en parallele par 5 items par 5 //
+p.run({
+    maxPromise: 5,
+    minWaitBeforeResult: 100,
+    //abortOnError: false,
+    //rejectOnError: false
+}).then(d => { console.log("Started") });
+
+// N'importe quand il est possible de vérifier si le process est terminée //
+p.isFinished().then(b => {
+    if (b) {
+        console.log("Process is complete")
+    } else {
+        console.log("Process is running")
     }
+})
 
-    // Context global d'exécution 
-    var GlobalContext =  {info: 1};
-
-    // Méthode unitaire d'exécution
-    function ModelTodealItem(indice:number,_items:any[],context?:any):Promise<any> {
-        let data = _items[indice];
-        let duration = 10000*data.duration;
-        return new Promise<any>((resolve, reject) => {
-            setTimeout(() => {
-                console.log('ModelTodealItem',data, context);
-                context.info++;
-                resolve(true)
-            }, duration)
-        });
-    }
-
-    // Préparation à l'exécution en parallèle
-    let p = new ParallelPromises(items,ModelTodealItem, GlobalContext);
-
-    // Exécution en parallele par 5 items par 5
-    p.run({ maxPromise: 5, minWaitBeforeResult: 100 }).then(d => {
-        console.log("Started")
-    })
-
-    // N'importe quand il est possible de vérifier si le process est terminée
-    p.isFinished().then(b => {
-        if (b) {
-            console.log("Process is complete")
-        } else {
-            console.log("Process is running")
-        }
-    })
-
-    // Attente de la fin d'exécution
-    p.waitFinish().then(globalContext => {
-        console.log('FINISHER',globalContext);
-    })
+// Attente de la fin d'exécution //
+p.waitFinish().then(globalContext => {
+    console.log('FINISHER', globalContext);
+})
 
 *
 */
-
-type NumberPromise = number | 3 ;
-interface ParallelOptions {
-    maxPromise: NumberPromise;
-    minWaitBeforeResult?:number;
-    rejectOnError?: boolean;
-    abortOnError?: boolean;
-}
-
-/**
- * Options possible à la méthode run()
- */
-export type RunOptions = (NumberPromise|ParallelOptions);
-
 export class ParallelPromises {
 
     private context = {
@@ -186,11 +182,12 @@ export class ParallelPromises {
     }
 
     /**
+     * Start process
      * 
      * @param options 
      * @returns 
      */
-    run(options?: ParallelOptions) {
+    run(options?: ParallelOptions):Promise<boolean[]> {
         this.waitDone = [];
        
         this.nbParallel = 3;

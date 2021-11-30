@@ -44,12 +44,12 @@ p.run({
     minWaitBeforeResult: 100,
     abortOnError: false,
     rejectOnError: false
-}).then(d => {
+}).then((d: boolean[]) => {
     console.log("Started ", d)
 })
 
 // N'importe quand il est possible de vérifier si le process est terminée
-p.isFinished().then(b => {
+p.isFinished().then((b: boolean) => {
     if (b) {
         console.log("Process is complete")
     } else {
@@ -58,9 +58,9 @@ p.isFinished().then(b => {
 })
 
 // Attente de la fin d'exécution
-p.waitFinish().then(globalContext => {
+p.waitFinish().then((globalContext: any) => {
     console.log('FINISH', globalContext);
     console.log(items)
-}).catch(err => {
+}).catch((err: any) => {
     console.log('FINISH ON ERROR', err);
 })
