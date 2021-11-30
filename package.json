@@ -5,7 +5,8 @@
   "main": "dist/lib/ma-parallel-promises.js",
   "types": "dist/lib/ma-parallel-promises.d.ts",
   "scripts": {
-    "test": "ts-node test\\test-ma-parallel-promises.ts",
+    "test": "ts-node test\\test1.ts",
+    "test-beer": "ts-node test\\test2.ts",
     "build": "tsc"
   },
   "keywords": [
