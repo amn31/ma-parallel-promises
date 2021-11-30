@@ -1,6 +1,6 @@
 {
   "name": "@amn31/ma-parallel-promises",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Run in parallel a number of promises regarding a big array of data",
   "main": "dist/lib/parallel-promises.js",
   "types": "dist/lib/parallel-promises.d.ts",
