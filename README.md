@@ -8,7 +8,7 @@ You can control the behaviour of the main process in case of error detect.
 # Installation
 
 ```cmd
-$ npm install @amn31/filter-multiple-conditions
+$ npm install @amn31/ma-parallel-promises
 ```
 
 # Example of usage
