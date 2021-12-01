@@ -13,6 +13,7 @@ $ npm install @amn31/ma-parallel-promises
 
 # Example of usage
 
+## Basic solution with ParallelPromises
 
 ```ts
 
@@ -75,6 +76,83 @@ p.waitFinish().then(globalContext => {
 })
 
 ```
+
+## Array solution with ParallelArray
+
+```ts
+
+import { ParallelPromises } from "@amn31/ma-parallel-promises";
+import { getInfoPresident, Presidents } from "../data-president";
+
+/* Construction of a new array in order to execute in parallel a promise for each element of this array  */
+let myArray = new ParallelArray<any>();
+
+/* Filling, here we have:
+    [
+        { party: 'Democratic', name: 'John F. Kennedy' }
+    ] 
+*/
+for(let president of Presidents) {
+    myArray.push(president);
+}
+
+/* Options regarding parallel execution */
+myArray.parallelOptions({
+    maxPromise: 1,
+    // abortOnError: false,
+    // rejectOnError: false,
+    minWaitBeforeResult: 100
+})
+
+/* 
+    Execution for each element with the method (element:any,globalcontext?:any):Promise<boolean>
+    A optional global context can be provided.
+ */
+myArray.parallelRun((element) => {
+
+    console.log('Deal president ', element);
+    // Define the unit Promise which return a boolean
+    return new Promise<boolean>(async (resolve, reject) => {
+
+        // Get asynchronous information regarding element
+        let president = await getInfoPresident(element);
+        // Array is completed 
+        element['info'] = president;
+
+        // Promise is closed
+        resolve(true)
+    });
+
+});
+
+ /* Waiting end process */
+ myArray.parallelResult().then(globalcontext => {
+    console.log('Result is the context ');
+    /* At this stage : Array has been completed with field 'info' like this :
+        [ {
+            party: 'Democratic',
+            name: 'John F. Kennedy',
+            info: {
+                Presidency: 35,
+                President: 'John F. Kennedy',
+                'Wikipedia Entry': 'http://en.wikipedia.org/wiki/John_F._Kennedy',
+                'Took office': '20/01/1961',
+                'Left office': '22/11/1963',
+                Party: 'Democratic',
+                Portrait: 'John_F_Kennedy.jpg',
+                Thumbnail: 'thmb_John_F_Kennedy.jpg',
+                'Home State': 'Massachusetts'
+            }
+        },]
+    */
+    console.log('First record is completed ',myArray[0])
+    console.log('Barack record is completed',myArray[myArray.length - 1])
+}).catch(err => {
+    console.log('Execution error', err);
+})
+
+```
+
 
 # Links
 

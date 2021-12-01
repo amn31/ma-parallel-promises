@@ -1,12 +1,14 @@
 {
   "name": "@amn31/ma-parallel-promises",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Run in parallel a number of promises regarding a big array of data",
   "main": "dist/lib/parallel-promises.js",
   "types": "dist/lib/parallel-promises.d.ts",
   "scripts": {
     "test": "ts-node test\\test1.ts",
     "test-beer": "ts-node test\\test2.ts",
+    "test3": "ts-node test\\test3.ts",
+    "test-array": "ts-node test\\test4.ts",
     "build": "tsc"
   },
   "keywords": [

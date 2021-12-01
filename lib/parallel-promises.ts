@@ -10,7 +10,7 @@
 /**
  * Maximun thread running in parallel
  */
-export type NumberPromise = number | 3 ;
+export type NumberPromise = number | 3;
 
 /**
  * Option to use for run() 
@@ -19,18 +19,18 @@ export interface ParallelOptions {
     /** Maximun thread running in parallel */
     maxPromise: NumberPromise;
     /** Number of milliseconds to wait before checking if the process is completed */
-    minWaitBeforeResult?:number;
+    minWaitBeforeResult?: number;
     /** The process will be stopped if a thread is rejected */
     abortOnError?: boolean;
     /** if a thread is rejected the promise of run() method will be rejected */
     rejectOnError?: boolean;
-    
+
 }
 
 /**
  * Option for run()
  */
-export type RunOptions = (NumberPromise|ParallelOptions);
+export type RunOptions = (NumberPromise | ParallelOptions);
 
 /**
  * Permet de paralléliser l'exécution de données d'un tableau
@@ -102,24 +102,41 @@ export class ParallelPromises {
         max: 0,
         done: 0
     };
+
     private minWaitBeforeResult: number = 1000;
-    private nbParallel: number = 0;
+    private MAX_PARALLEL_PROMISE: number = 5;
+    private nbParallel: number = this.MAX_PARALLEL_PROMISE;
     private waitDone: number[] = [];
     private promises: Promise<boolean>[] = [];
     private rejectOnError: boolean = false;
     private abortOnError: boolean = false;
+    private dealItem!: (indice: number, items: any[], ctx?: any) => Promise<boolean>;
+    private dealElem!: (elem: any[], ctx?: any) => Promise<boolean>;
 
-    constructor(private items: any[],
-        private dealItem: (indice: number, items: any[], ctx?: any) => Promise<boolean>,
+    constructor(private items: Array<any>,
+        unitDealItem?: (indice: number, items: any[], ctx?: any) => Promise<boolean>,
         private globalContext?: any) {
+
+        if (unitDealItem) {
+            this.dealItem = unitDealItem;
+        }
         this.context.max = items.length
+    }
+
+    /**
+     * set dealElem according method with parameter (elem: any[], ctx?: any)
+     * 
+     * @param dealElem 
+     */
+    public setDealElem (dealElem: (elem: any[], ctx?: any) => Promise<boolean>) {
+        this.dealElem = dealElem;
     }
 
     private _dealItem(i: number, items: any[]): Promise<boolean> {
 
         return new Promise<any>((resolve, reject) => {
-            //let data = items[i];
-            this.dealItem(i, items, this.globalContext).then(d => {
+            
+            let onSuccess = () => {
                 if ((!this.context.abortOnError || this.abortOnError == false) && this.context.currentIndice < this.context.max - 1) {
                     // console.log("Next " + (this.context.currentIndice + 1));
                     this.context.done = 0;
@@ -133,12 +150,34 @@ export class ParallelPromises {
                         this.context.done = 1;
                     }
                 }
-            }).catch(err => {
-                console.log("ParallelPromises ERROR detect on item (", i , ')',err);
+            }
+
+            let onError = (err: any,reject: (arg0: { error: any; item: any; }) => any) => {
+                console.log("ParallelPromises ERROR detect on item (", i, ')', err);
                 this.context.abortOnError = 1
                 this.waitDone.push(i);
-                return reject({error: err,item:items[i]})
-            });
+                return reject({ error: err, item: items[i] })
+            }
+
+            if (this.dealElem != undefined) {
+                let element = items[i];
+                this.dealElem(element, this.globalContext).then(d => {
+                    onSuccess();
+                }).catch(err => {
+                    return onError({ error: err, item: items[i] },reject)
+                });
+
+            } else {
+                if (this.dealItem == undefined) {
+                    return reject({ error: 'Bad usage of run()' });
+                }
+                this.dealItem(i, items, this.globalContext).then(d => {
+                    onSuccess();
+                }).catch(err => {
+                    return onError({ error: err, item: items[i] },reject)
+                });
+            }
+           
             resolve(true);
         });
 
@@ -177,23 +216,34 @@ export class ParallelPromises {
             } else {
                 resolve(this.globalContext);
             }
-            
+            this.promises = [];
+
         });
     }
 
     /**
      * Start process
      * 
-     * @param options 
-     * @returns 
+     * @param options   ParallelOptions
+                       {
+                            maxPromise: 5,
+                            minWaitBeforeResult: 1000,
+                            abortOnError: false,
+                            rejectOnError: false
+                        }
+     * @returns Promise<boolean[]>
      */
-    run(options?: ParallelOptions):Promise<boolean[]> {
+    run(options?: ParallelOptions): Promise<boolean[]> {
         this.waitDone = [];
-       
-        this.nbParallel = 3;
-        if (typeof(options) == 'object' ) {
+
+        if (this.context.done != 0) {
+            throw ('A thread is still running !');
+        }
+
+        this.nbParallel = this.MAX_PARALLEL_PROMISE;
+        if (typeof (options) == 'object') {
             if (options.maxPromise > 0) {
-                this.nbParallel = options.maxPromise
+                this.nbParallel = options.maxPromise -1;
             }
             if (options.minWaitBeforeResult && options.minWaitBeforeResult > 0) {
                 this.minWaitBeforeResult = options.minWaitBeforeResult
@@ -205,7 +255,7 @@ export class ParallelPromises {
                 this.abortOnError = options.abortOnError;
             }
         }
-        
+
         this.context.done = 0;
 
         this.promises.push(this._dealItem(this.context.currentIndice, this.items));
@@ -216,5 +266,113 @@ export class ParallelPromises {
         return Promise.all(this.promises);
 
     }
+
+    isDone(): boolean {
+        return (this.context.done == 0)
+    }
+
+}
+
+export class ParallelArray<T> extends Array<T> {
+
+    private p!: ParallelPromises;
+    private po!: ParallelOptions;
+    private globalContext!: any;
+
+    // remove: (elem: T) => Array<T> = (elem: T) => {
+    //     console.log('R',this)
+    //     return this.filter(e => e !== elem);
+    // }
+
+    /**
+     * Can be used to clone an array
+     * 
+     * @param arr Array
+     */
+    cloneFrom: (arr: Array<T>) => void = (arr: Array<T>) => {
+        this.splice(0);
+        for (let o of arr) {
+            this.push(o);
+        }
+    }
+
+    /**
+     * Duplicate data in a new array
+     * 
+     * @returns Array
+     */
+    print: () => void = () => {
+        let a:any[] = []
+        for(let o of this) {
+            a.push(o);
+        }
+        return a;
+    }
+
+    /**
+     * 
+     * Start running unitDealItem() for each element of Array
+     * 
+     * @param unitDealItem Unitary data processing method
+     * @param globalContext any
+     * @returns void
+     */
+    parallelRun:
+        (unitDealItem: (data: any, ctx?: any) => Promise<boolean>, globalContext?: any)
+            => void
+        = (unitDealItem: (data: any, ctx?: any) => Promise<boolean>, globalContext?: any) => {
+            if (globalContext) {
+                this.globalContext = globalContext
+            }
+            let f = () => {
+                // console.log('CREATE INSTANCE p', this.po)
+                this.p = new ParallelPromises(this, undefined, this.globalContext);
+                this.p.setDealElem(unitDealItem);
+                this.p.run(this.po);
+            }
+            if (this.p && this.p.isDone()) {
+                //throw ("parallelRun() a process is already running")
+                this.p.waitFinish().then(f).catch(f)
+            } else {
+                f();
+            }
+        }
+
+
+
+    /**
+     * Provide result of running method parallelRun()
+     * 
+     * @returns Promise<any>
+     */
+    parallelResult: () => Promise<any> = () => {
+        if (this.p) {
+            return this.p.waitFinish();
+        } else {
+            throw ('ParallelArray parallelRun() must be call before!');
+        }
+    }
+
+    /**
+     * Set options during execution of method parallelRun()
+     * 
+     * @param options   ParallelOptions
+                       {
+                            maxPromise: 5,
+                            minWaitBeforeResult: 1000,
+                            abortOnError: false,
+                            rejectOnError: false
+                        }
+     * @param globalContext any
+     */
+    parallelOptions:
+        (options: ParallelOptions, globalContext?: any)
+            => void
+        = (options: ParallelOptions, globalContext?: any) => {
+            this.po = options;
+            if (globalContext) {
+                this.globalContext = globalContext
+            }
+        }
 
 }
