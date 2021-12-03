@@ -1,6 +1,6 @@
 {
   "name": "@amn31/ma-parallel-promises",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Run in parallel a number of promises regarding a big array of data",
   "main": "dist/lib/parallel-promises.js",
   "types": "dist/lib/parallel-promises.d.ts",
@@ -9,7 +9,8 @@
     "test-beer": "ts-node test\\test2.ts",
     "test3": "ts-node test\\test3.ts",
     "test-array": "ts-node test\\test4.ts",
-    "build": "tsc"
+    "example": "node js\\example.js",
+    "build": "tsc --project tsconfig-build.json"
   },
   "keywords": [
     "parallel",
@@ -21,9 +22,10 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^16.11.10",
-    "typescript": "^4.5.2"
+    "typescript": "^4.5.2",
+    "axios": "^0.24.0"
   },
   "dependencies": {
-    "axios": "^0.24.0"
+    
   }
 }

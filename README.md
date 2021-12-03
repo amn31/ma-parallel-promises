@@ -11,14 +11,13 @@ You can control the behaviour of the main process in case of error detect.
 $ npm install @amn31/ma-parallel-promises
 ```
 
-# Example of usage
+# Examples
 
 ## Basic solution with ParallelPromises
 
 ```ts
 
-import { ParallelPromises } from "@amn31/ma-parallel-promises";
-
+var maParallelPromises = require("@amn31/ma-parallel-promises")
 
 /* Array of data 
     here we have:
@@ -26,7 +25,7 @@ import { ParallelPromises } from "@amn31/ma-parallel-promises";
         { user: '...', duration: 0.45 }
     ] 
 */
-let items: any[] = [];
+let items = [];
 for (var i = 0; i < 100; i++) {
     items.push({
         user: 'user' + i,
@@ -38,9 +37,9 @@ for (var i = 0; i < 100; i++) {
 var GlobalContext = { nbItem: 0 };
 
 /* Unitary data processing method */
-function ModelTodealItem(indice: number, _items: any[], context?: any): Promise<any> {
+let ModelTodealItem = (indice, _items, context) => {
     let data = _items[indice];
-    let duration = 10000 * data.duration;
+    let duration = 1000 * data.duration;
     return new Promise((resolve, reject) => {
         setTimeout(() => {
             console.log('ModelTodealItem', data, context);
@@ -51,7 +50,10 @@ function ModelTodealItem(indice: number, _items: any[], context?: any): Promise<
 }
 
 /* Preparation */
-let p = new ParallelPromises(items, ModelTodealItem, GlobalContext);
+let p = new maParallelPromises.ParallelPromises(
+                items, 
+                ModelTodealItem, 
+                GlobalContext);
 
 /* Run process */
 p.run({
